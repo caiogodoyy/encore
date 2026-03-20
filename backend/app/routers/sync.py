@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Cookie, HTTPException
 
 from app.services import spotify as spotify_service
 from app.services.session import get_session, update_session
-from app.services.sync import sync_playlist, refresh_spotify_token
+from app.services.sync import sync_playlist, _refresh_spotify_token
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -17,7 +17,7 @@ async def list_playlists(session_id: str | None = Cookie(None)):
     if session is None or not session.get("spotify_access_token"):
         raise HTTPException(status_code=401, detail="Spotify not connected")
 
-    token = await refresh_spotify_token(session_id, session)
+    token = await _refresh_spotify_token(session_id, session)
     playlists = await spotify_service.get_user_playlists(token)
     return {"playlists": playlists}
 
