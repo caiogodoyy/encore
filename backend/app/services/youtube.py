@@ -130,6 +130,70 @@ async def create_playlist(
         return resp.json()["id"]
 
 
+async def find_playlist_by_title(access_token: str, title: str) -> str | None:
+    """Search the user's own playlists for one matching *title*. Returns playlist ID or None.
+
+    Uses playlists.list (1 quota unit per page).
+    """
+    url: str | None = f"{YOUTUBE_API_BASE}/playlists"
+    params: dict = {"part": "snippet", "mine": "true", "maxResults": "50"}
+    async with httpx.AsyncClient() as client:
+        while url:
+            resp = await client.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if resp.status_code in (401, 403):
+                return None
+            resp.raise_for_status()
+            data = resp.json()
+            for item in data.get("items", []):
+                if item["snippet"]["title"] == title:
+                    return item["id"]
+            next_token = data.get("nextPageToken")
+            if next_token:
+                params["pageToken"] = next_token
+            else:
+                url = None
+    return None
+
+
+async def get_playlist_video_ids(access_token: str, playlist_id: str) -> set[str]:
+    """Return all video IDs already in a YouTube playlist.
+
+    Uses playlistItems.list (1 quota unit per page).
+    """
+    video_ids: set[str] = set()
+    url: str | None = f"{YOUTUBE_API_BASE}/playlistItems"
+    params: dict = {
+        "part": "contentDetails",
+        "playlistId": playlist_id,
+        "maxResults": "50",
+    }
+    async with httpx.AsyncClient() as client:
+        while url:
+            resp = await client.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            if resp.status_code in (401, 403):
+                break
+            resp.raise_for_status()
+            data = resp.json()
+            for item in data.get("items", []):
+                vid = item.get("contentDetails", {}).get("videoId")
+                if vid:
+                    video_ids.add(vid)
+            next_token = data.get("nextPageToken")
+            if next_token:
+                params["pageToken"] = next_token
+            else:
+                url = None
+    return video_ids
+
+
 async def add_video_to_playlist(
     access_token: str, playlist_id: str, video_id: str
 ) -> None:

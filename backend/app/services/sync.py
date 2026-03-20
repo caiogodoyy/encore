@@ -110,79 +110,111 @@ async def sync_playlist(session_id: str, playlist_id: str) -> None:
             },
         )
 
-        # 2. Create a new YouTube playlist
-        try:
-            yt_playlist_id = await youtube.create_playlist(
-                youtube_token,
-                title=f"{playlist_name} (via Encore!)",
-                description=f"Synced from Spotify playlist: {playlist_name}",
-            )
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 403:
-                await update_session(
-                    session_id,
-                    {
-                        "sync_status": "error",
-                        "sync_error": (
-                            "Quota do YouTube atingida. "
-                            "Tente novamente amanhã."
-                        ),
-                    },
-                )
-                return
-            raise
+        # 2. Check if this playlist was already synced before
+        yt_title = f"{playlist_name} (via Encore!)"
+        yt_playlist_id = None
+        existing_video_ids: set[str] = set()
 
-        # 3. Search & add each track
+        try:
+            yt_playlist_id = await youtube.find_playlist_by_title(
+                youtube_token, yt_title
+            )
+        except Exception:
+            logger.debug("Could not search for existing YT playlist, will create new")
+
+        if yt_playlist_id:
+            logger.info(
+                "Found existing YouTube playlist %s for '%s'",
+                yt_playlist_id,
+                yt_title,
+            )
+            try:
+                existing_video_ids = await youtube.get_playlist_video_ids(
+                    youtube_token, yt_playlist_id
+                )
+                logger.info(
+                    "Playlist already has %d videos, will resume",
+                    len(existing_video_ids),
+                )
+            except Exception:
+                logger.warning("Could not fetch existing items, starting fresh")
+                existing_video_ids = set()
+        else:
+            # Create a new YouTube playlist
+            try:
+                yt_playlist_id = await youtube.create_playlist(
+                    youtube_token,
+                    title=yt_title,
+                    description=f"Synced from Spotify playlist: {playlist_name}",
+                )
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 403:
+                    await update_session(
+                        session_id,
+                        {
+                            "sync_status": "error",
+                            "sync_error": (
+                                "Quota do YouTube atingida. "
+                                "Tente novamente amanhã."
+                            ),
+                        },
+                    )
+                    return
+                raise
+
+        # 3. Search & add each track (skip already-added ones)
         await update_session(session_id, {"sync_status": "adding_tracks"})
 
-        added = 0
+        added = len(existing_video_ids)
         skipped = 0
         for i, track in enumerate(tracks):
             video_id = await youtube.search_video(youtube_token, track["query"])
             if video_id:
-                try:
-                    await youtube.add_video_to_playlist(
-                        youtube_token, yt_playlist_id, video_id
-                    )
-                    added += 1
-                except httpx.HTTPStatusError as e:
-                    if e.response.status_code in (401, 403):
-                        # Try refreshing the YouTube token once
-                        try:
-                            session = await get_session(session_id)
-                            youtube_token = await _refresh_youtube_token(session_id, session)
-                            await youtube.add_video_to_playlist(
-                                youtube_token, yt_playlist_id, video_id
-                            )
-                            added += 1
-                        except httpx.HTTPStatusError as e2:
-                            if e2.response.status_code == 403:
-                                logger.warning(
-                                    "YouTube quota likely exceeded at track %d/%d",
-                                    i + 1,
-                                    len(tracks),
-                                )
-                                await update_session(
-                                    session_id,
-                                    {
-                                        "sync_status": "completed",
-                                        "sync_youtube_playlist_id": yt_playlist_id,
-                                        "sync_added": added,
-                                        "sync_skipped": len(tracks) - i,
-                                        "sync_progress": len(tracks),
-                                        "sync_error": (
-                                            f"Quota do YouTube atingida após {added} faixas. "
-                                            "Tente novamente amanhã para continuar."
-                                        ),
-                                    },
-                                )
-                                return
-                            raise
-                    else:
-                        skipped += 1
-                        logger.warning(
-                            "Failed to add track %s: %s", track["query"], e
+                if video_id in existing_video_ids:
+                    pass  # Already in the playlist from a previous run
+                else:
+                    try:
+                        await youtube.add_video_to_playlist(
+                            youtube_token, yt_playlist_id, video_id
                         )
+                        added += 1
+                    except httpx.HTTPStatusError as e:
+                        if e.response.status_code in (401, 403):
+                            try:
+                                session = await get_session(session_id)
+                                youtube_token = await _refresh_youtube_token(session_id, session)
+                                await youtube.add_video_to_playlist(
+                                    youtube_token, yt_playlist_id, video_id
+                                )
+                                added += 1
+                            except httpx.HTTPStatusError as e2:
+                                if e2.response.status_code == 403:
+                                    logger.warning(
+                                        "YouTube quota likely exceeded at track %d/%d",
+                                        i + 1,
+                                        len(tracks),
+                                    )
+                                    await update_session(
+                                        session_id,
+                                        {
+                                            "sync_status": "completed",
+                                            "sync_youtube_playlist_id": yt_playlist_id,
+                                            "sync_added": added,
+                                            "sync_skipped": len(tracks) - added - skipped,
+                                            "sync_progress": len(tracks),
+                                            "sync_error": (
+                                                f"Quota do YouTube atingida após {added} faixas. "
+                                                "Tente novamente amanhã para continuar."
+                                            ),
+                                        },
+                                    )
+                                    return
+                                raise
+                        else:
+                            skipped += 1
+                            logger.warning(
+                                "Failed to add track %s: %s", track["query"], e
+                            )
             else:
                 skipped += 1
                 logger.warning("No YouTube result for: %s", track["query"])
