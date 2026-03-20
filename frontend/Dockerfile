@@ -7,11 +7,11 @@ RUN npm install
 
 COPY . .
 
-ARG BACKEND_URL=http://127.0.0.1:8000
+ARG BACKEND_URL
 ENV BACKEND_URL=$BACKEND_URL
 
 RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx next start --port ${PORT:-3000}"]
