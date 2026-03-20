@@ -9,18 +9,18 @@ class Settings(BaseSettings):
     # Spotify OAuth
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
-    spotify_redirect_uri: str = "http://127.0.0.1:3000/api/auth/spotify/callback"
+    spotify_redirect_uri: str = ""
 
     # Google/YouTube OAuth
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://127.0.0.1:3000/api/auth/youtube/callback"
+    google_redirect_uri: str = ""
 
     # Redis
-    redis_url: str = "redis://127.0.0.1:6379/0"
+    redis_url: str = ""
 
     # Frontend
-    frontend_url: str = "http://127.0.0.1:3000"
+    frontend_url: str = ""
 
     # Session
     session_ttl_seconds: int = 3600
