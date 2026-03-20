@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0a0a;
+  --bg: #050505;
   --fg: #fafafa;
   --accent: #1db954;
   --accent-yt: #ff0000;
-  --card: #141414;
-  --border: #262626;
+  --card: #111111;
+  --card-hover: #161616;
+  --border: #1e1e1e;
   --muted: #737373;
+  --glow-spotify: rgba(29, 185, 84, 0.15);
+  --glow-youtube: rgba(255, 0, 0, 0.15);
 }
 
 body {
@@ -15,3 +18,78 @@ body {
   color: var(--fg);
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
+
+/* Animated gradient background */
+.bg-gradient-radial {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, var(--glow-spotify), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 60%, var(--glow-youtube), transparent),
+    var(--bg);
+}
+
+/* Glass card */
+.glass {
+  background: rgba(17, 17, 17, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* Step indicator */
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.step-badge.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px var(--glow-spotify);
+}
+.step-badge.done {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+/* Stagger children */
+.stagger > * { animation: fadeInUp 0.35s ease-out both; }
+.stagger > *:nth-child(1) { animation-delay: 0.0s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.36s; }
+.stagger > *:nth-child(8) { animation-delay: 0.42s; }
+.stagger > *:nth-child(9) { animation-delay: 0.48s; }
+.stagger > *:nth-child(10) { animation-delay: 0.54s; }

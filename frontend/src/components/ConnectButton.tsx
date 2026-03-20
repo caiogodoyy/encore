@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 
 interface ConnectButtonProps {
   platform: "spotify" | "youtube";
@@ -10,8 +10,8 @@ interface ConnectButtonProps {
 const config = {
   spotify: {
     label: "Spotify",
-    color: "bg-[#1db954] hover:bg-[#1ed760]",
-    connectedColor: "bg-[#1db954]/20 border-[#1db954]/40",
+    color: "bg-[#1db954] hover:bg-[#1ed760] shadow-[0_4px_20px_rgba(29,185,84,0.3)] hover:shadow-[0_4px_28px_rgba(29,185,84,0.45)]",
+    connectedColor: "bg-[#1db954]/10 border-[#1db954]/30",
     loginUrl: "/api/auth/spotify/login",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -21,8 +21,8 @@ const config = {
   },
   youtube: {
     label: "YouTube",
-    color: "bg-[#ff0000] hover:bg-[#ff2020]",
-    connectedColor: "bg-[#ff0000]/20 border-[#ff0000]/40",
+    color: "bg-[#ff0000] hover:bg-[#ff2020] shadow-[0_4px_20px_rgba(255,0,0,0.25)] hover:shadow-[0_4px_28px_rgba(255,0,0,0.4)]",
+    connectedColor: "bg-[#ff0000]/10 border-[#ff0000]/30",
     loginUrl: "/api/auth/youtube/login",
     icon: (
       <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -41,11 +41,11 @@ export default function ConnectButton({
   if (connected) {
     return (
       <div
-        className={`flex items-center gap-3 px-6 py-3 rounded-xl border ${c.connectedColor} text-white/90 transition-all`}
+        className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border ${c.connectedColor} text-white/80 transition-all duration-200`}
       >
         {c.icon}
-        <span className="font-medium">{c.label}</span>
-        <Check className="w-5 h-5 text-green-400 ml-auto" />
+        <span className="font-medium text-[15px]">{c.label}</span>
+        <Check className="w-4.5 h-4.5 text-green-400 ml-auto" />
       </div>
     );
   }
@@ -53,10 +53,11 @@ export default function ConnectButton({
   return (
     <a
       href={c.loginUrl}
-      className={`flex items-center gap-3 px-6 py-3 rounded-xl ${c.color} text-white font-medium transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]`}
+      className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl ${c.color} text-white font-medium text-[15px] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]`}
     >
       {c.icon}
       <span>Conectar {c.label}</span>
+      <ExternalLink className="w-3.5 h-3.5 ml-auto opacity-50" />
     </a>
   );
 }
